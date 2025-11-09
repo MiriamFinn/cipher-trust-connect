@@ -3,19 +3,43 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Lock, TrendingUp, Clock } from "lucide-react";
 import { useState } from "react";
+import { useAccount } from "wagmi";
+import { toast } from "sonner";
+import LoanDetailsDialog from "./LoanDetailsDialog";
 
 const BorrowPanel = () => {
+  const { isConnected } = useAccount();
   const [loanAmount, setLoanAmount] = useState([5000]);
-  const [encryptedScore] = useState(750); // Encrypted value
+  const [encryptedScore] = useState(750);
+  const [selectedOffer, setSelectedOffer] = useState<typeof offers[0] | null>(null);
+  const [showOffers, setShowOffers] = useState(false);
 
   const offers = [
-    { lender: "Lender A", rate: "5.2%", amount: "$5,000", term: "12 months", encrypted: true },
-    { lender: "Lender B", rate: "5.8%", amount: "$5,000", term: "12 months", encrypted: true },
-    { lender: "Lender C", rate: "6.1%", amount: "$5,000", term: "12 months", encrypted: true },
+    { lender: "Lender A", rate: "5.2%", amount: `$${loanAmount[0].toLocaleString()}`, term: "12 months", encrypted: true },
+    { lender: "Lender B", rate: "5.8%", amount: `$${loanAmount[0].toLocaleString()}`, term: "12 months", encrypted: true },
+    { lender: "Lender C", rate: "6.1%", amount: `$${loanAmount[0].toLocaleString()}`, term: "12 months", encrypted: true },
   ];
 
+  const handleRequestOffers = () => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+    setShowOffers(true);
+    toast.success("Loan offers generated using encrypted scoring!");
+  };
+
+  const handleViewDetails = (offer: typeof offers[0]) => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+    setSelectedOffer(offer);
+  };
+
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <>
+      <div className="grid gap-6 lg:grid-cols-2">
       <Card className="p-6 bg-gradient-card shadow-card">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -58,7 +82,11 @@ const BorrowPanel = () => {
             </div>
           </div>
 
-          <Button className="w-full bg-gradient-primary hover:opacity-90 transition-opacity" size="lg">
+          <Button 
+            className="w-full bg-gradient-primary hover:opacity-90 transition-opacity" 
+            size="lg"
+            onClick={handleRequestOffers}
+          >
             <TrendingUp className="mr-2 h-5 w-5" />
             Request Loan Offers
           </Button>
@@ -67,7 +95,15 @@ const BorrowPanel = () => {
 
       <div className="space-y-4">
         <h3 className="text-xl font-semibold mb-4">Available Offers</h3>
-        {offers.map((offer, index) => (
+        {!showOffers && (
+          <Card className="p-8 text-center bg-gradient-card">
+            <Lock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              Request loan offers to see encrypted matches from lenders
+            </p>
+          </Card>
+        )}
+        {showOffers && offers.map((offer, index) => (
           <Card key={index} className="p-5 bg-gradient-card shadow-card hover:shadow-glow transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -97,13 +133,26 @@ const BorrowPanel = () => {
               </div>
             </div>
 
-            <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10">
+            <Button 
+              variant="outline" 
+              className="w-full border-primary text-primary hover:bg-primary/10"
+              onClick={() => handleViewDetails(offer)}
+            >
               View Details
             </Button>
           </Card>
         ))}
       </div>
-    </div>
+      </div>
+
+      {selectedOffer && (
+        <LoanDetailsDialog
+          open={!!selectedOffer}
+          onOpenChange={(open) => !open && setSelectedOffer(null)}
+          offer={selectedOffer}
+        />
+      )}
+    </>
   );
 };
 

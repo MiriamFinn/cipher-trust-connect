@@ -1,5 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Shield } from "lucide-react";
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import logo from "@/assets/trustbond-logo.png";
 
 const Header = () => {
@@ -25,10 +24,7 @@ const Header = () => {
           </a>
         </nav>
 
-        <Button className="bg-gradient-primary hover:opacity-90 transition-opacity">
-          <Shield className="mr-2 h-4 w-4" />
-          Connect Wallet
-        </Button>
+        <ConnectButton />
       </div>
     </header>
   );

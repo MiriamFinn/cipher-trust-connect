@@ -3,10 +3,16 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Shield, TrendingUp, Lock } from "lucide-react";
 import { useState } from "react";
+import { useAccount } from "wagmi";
+import { toast } from "sonner";
+import BorrowRequestDetailsDialog from "./BorrowRequestDetailsDialog";
 
 const LendPanel = () => {
+  const { isConnected } = useAccount();
   const [investAmount, setInvestAmount] = useState([10000]);
   const [minScore, setMinScore] = useState([650]);
+  const [selectedRequest, setSelectedRequest] = useState<typeof borrowRequests[0] | null>(null);
+  const [showRequests, setShowRequests] = useState(false);
 
   const borrowRequests = [
     { id: "B-001", encryptedScore: "***", amount: "$8,500", term: "18 months", risk: "Medium" },
@@ -14,8 +20,34 @@ const LendPanel = () => {
     { id: "B-003", encryptedScore: "***", amount: "$6,000", term: "12 months", risk: "Medium" },
   ];
 
+  const handleStartLending = () => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+    setShowRequests(true);
+    toast.success("Found matching borrowers with encrypted profiles!");
+  };
+
+  const handleMakeOffer = (request: typeof borrowRequests[0]) => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+    setSelectedRequest(request);
+  };
+
+  const handleViewDetails = (request: typeof borrowRequests[0]) => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+    setSelectedRequest(request);
+  };
+
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <>
+      <div className="grid gap-6 lg:grid-cols-2">
       <Card className="p-6 bg-gradient-card shadow-card">
         <div className="mb-6">
           <h3 className="text-xl font-semibold mb-2">Set Your Parameters</h3>
@@ -78,7 +110,11 @@ const LendPanel = () => {
             </div>
           </div>
 
-          <Button className="w-full bg-gradient-primary hover:opacity-90 transition-opacity" size="lg">
+          <Button 
+            className="w-full bg-gradient-primary hover:opacity-90 transition-opacity" 
+            size="lg"
+            onClick={handleStartLending}
+          >
             <TrendingUp className="mr-2 h-5 w-5" />
             Start Lending
           </Button>
@@ -87,7 +123,15 @@ const LendPanel = () => {
 
       <div className="space-y-4">
         <h3 className="text-xl font-semibold mb-4">Matching Requests</h3>
-        {borrowRequests.map((request) => (
+        {!showRequests && (
+          <Card className="p-8 text-center bg-gradient-card">
+            <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              Set your parameters and start lending to see encrypted borrower matches
+            </p>
+          </Card>
+        )}
+        {showRequests && borrowRequests.map((request) => (
           <Card key={request.id} className="p-5 bg-gradient-card shadow-card hover:shadow-glow transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -122,17 +166,34 @@ const LendPanel = () => {
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 border-secondary text-secondary hover:bg-secondary/10">
+              <Button 
+                variant="outline" 
+                className="flex-1 border-secondary text-secondary hover:bg-secondary/10"
+                onClick={() => handleMakeOffer(request)}
+              >
                 Make Offer
               </Button>
-              <Button variant="outline" className="flex-1">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => handleViewDetails(request)}
+              >
                 Details
               </Button>
             </div>
           </Card>
         ))}
       </div>
-    </div>
+      </div>
+
+      {selectedRequest && (
+        <BorrowRequestDetailsDialog
+          open={!!selectedRequest}
+          onOpenChange={(open) => !open && setSelectedRequest(null)}
+          request={selectedRequest}
+        />
+      )}
+    </>
   );
 };
 

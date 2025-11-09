@@ -3,6 +3,20 @@ import { Lock, TrendingUp } from "lucide-react";
 import heroBackground from "@/assets/hero-background.jpg";
 
 const Hero = () => {
+  const scrollToDashboard = (tab: 'borrow' | 'lend') => {
+    const dashboardElement = document.querySelector('#dashboard');
+    if (dashboardElement) {
+      dashboardElement.scrollIntoView({ behavior: 'smooth' });
+      // Trigger tab change after scroll
+      setTimeout(() => {
+        const tabTrigger = document.querySelector(`[value="${tab}"]`) as HTMLElement;
+        if (tabTrigger) {
+          tabTrigger.click();
+        }
+      }, 500);
+    }
+  };
+
   return (
     <section className="relative overflow-hidden bg-gradient-hero py-20 md:py-32">
       <div 
@@ -31,11 +45,20 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" className="bg-gradient-primary hover:opacity-90 transition-opacity shadow-glow">
+            <Button 
+              size="lg" 
+              className="bg-gradient-primary hover:opacity-90 transition-opacity shadow-glow"
+              onClick={() => scrollToDashboard('borrow')}
+            >
               <TrendingUp className="mr-2 h-5 w-5" />
               Start Borrowing
             </Button>
-            <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-primary text-primary hover:bg-primary/10"
+              onClick={() => scrollToDashboard('lend')}
+            >
               Become a Lender
             </Button>
           </div>

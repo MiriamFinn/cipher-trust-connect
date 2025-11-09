@@ -4,7 +4,7 @@ import LendPanel from "./LendPanel";
 
 const Dashboard = () => {
   return (
-    <section className="py-16 md:py-24">
+    <section id="dashboard" className="py-16 md:py-24">
       <div className="container">
         <div className="mx-auto max-w-6xl">
           <div className="mb-12 text-center">
