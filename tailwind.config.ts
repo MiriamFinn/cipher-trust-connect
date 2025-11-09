@@ -57,6 +57,25 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        finance: {
+          deep: "hsl(var(--finance-deep))",
+          light: "hsl(var(--finance-light))",
+        },
+        tech: {
+          teal: "hsl(var(--tech-teal))",
+          "teal-light": "hsl(var(--tech-teal-light))",
+        },
+        success: "hsl(var(--success))",
+        encrypted: "hsl(var(--encrypted))",
+      },
+      backgroundImage: {
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-card": "var(--gradient-card)",
+        "gradient-hero": "var(--gradient-hero)",
+      },
+      boxShadow: {
+        card: "var(--shadow-card)",
+        glow: "var(--shadow-glow)",
       },
       borderRadius: {
         lg: "var(--radius)",
