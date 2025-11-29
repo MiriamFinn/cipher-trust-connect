@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/cipher-trust-logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cipher Trust Connect - Privacy-First Lending</title>
+    <meta name="description" content="Borrow and lend cryptocurrencies with complete privacy protection using Fully Homomorphic Encryption" />
+    <!-- Disable Coinbase analytics globally -->
+    <script>
+      window.__COINBASE_SDK_DISABLE_TELEMETRY__ = true;
+      window.__DISABLE_COINBASE_ANALYTICS__ = true;
+    </script>
+    <!-- Load Zama Relayer SDK from CDN (required for Sepolia network) -->
+    <script src="https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.umd.cjs" type="text/javascript"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
