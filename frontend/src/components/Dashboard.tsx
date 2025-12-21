@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BorrowPanel from "./BorrowPanel";
 import LendPanel from "./LendPanel";
+import TransactionHistory from "./TransactionHistory";
 
 const Dashboard = () => {
   return (
@@ -17,9 +18,10 @@ const Dashboard = () => {
           </div>
 
           <Tabs defaultValue="borrow" className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-8">
               <TabsTrigger value="borrow" className="text-base">Borrow</TabsTrigger>
               <TabsTrigger value="lend" className="text-base">Lend</TabsTrigger>
+              <TabsTrigger value="history" className="text-base">History</TabsTrigger>
             </TabsList>
 
             <TabsContent value="borrow" className="mt-0">
@@ -28,6 +30,10 @@ const Dashboard = () => {
 
             <TabsContent value="lend" className="mt-0">
               <LendPanel />
+            </TabsContent>
+
+            <TabsContent value="history" className="mt-0">
+              <TransactionHistory />
             </TabsContent>
           </Tabs>
         </div>

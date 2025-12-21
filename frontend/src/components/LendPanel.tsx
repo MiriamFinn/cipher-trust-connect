@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { toast } from "sonner";
 import { useCipherLending } from "@/hooks/useCipherLending";
+import { useTransactionHistory } from "@/hooks/useTransactionHistory";
 import BorrowRequestDetailsDialog from "./BorrowRequestDetailsDialog";
 import { formatEther } from "viem";
 
@@ -26,6 +27,7 @@ interface BorrowerRequest {
 const LendPanel = () => {
   const { isConnected } = useAccount();
   const { findEncryptedMatches, getBorrowerRequest, checkScoreMatch } = useCipherLending();
+  const { addTransaction, updateTransaction } = useTransactionHistory();
   const [investAmount, setInvestAmount] = useState([10000]);
   const [minScore, setMinScore] = useState([650]);
   const [selectedRequest, setSelectedRequest] = useState<BorrowerRequest | null>(null);
@@ -46,7 +48,19 @@ const LendPanel = () => {
     }
 
     setIsSearching(true);
+    let txId: string | undefined;
+
     try {
+      // Record transaction start
+      txId = addTransaction({
+        type: 'match_search',
+        status: 'pending',
+        details: {
+          minScore: minScore[0],
+          amount: `$${investAmount[0].toLocaleString()}`,
+        },
+      });
+
       // 1. Find matching request IDs from contract
       const matchingRequestIds = await findEncryptedMatches(minScore[0]);
       
@@ -165,6 +179,17 @@ const LendPanel = () => {
       setBorrowRequests(activeRequests);
       setShowRequests(true);
       
+      // Update transaction status
+      if (txId) {
+        updateTransaction(txId, {
+          status: 'success',
+          details: {
+            minScore: minScore[0],
+            amount: `$${investAmount[0].toLocaleString()}`,
+          },
+        });
+      }
+      
       if (activeRequests.length > 0) {
         let message = `Found ${activeRequests.length} matching borrower request${activeRequests.length > 1 ? 's' : ''}!`;
         if (filteredCount > 0) {
@@ -180,6 +205,15 @@ const LendPanel = () => {
       }
     } catch (error) {
       console.error("Error finding matches:", error);
+      
+      // Update transaction status to failed
+      if (txId) {
+        updateTransaction(txId, {
+          status: 'failed',
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+      
       toast.error("Failed to find matches. Please try again.");
       setBorrowRequests([]);
       setShowRequests(false);

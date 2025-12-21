@@ -320,6 +320,64 @@ export const useCipherLending = () => {
     }
   }, [publicClient, contractAddress]);
 
+  const submitLenderOffer = useCallback(async (
+    borrowerRequestId: bigint,
+    amount: bigint,
+    apr: number, // APR in basis points (e.g., 500 = 5%)
+    term: number // Term in months
+  ): Promise<`0x${string}` | null> => {
+    if (!contractAddress || !address) {
+      toast.error("Contract not available or wallet not connected");
+      return null;
+    }
+
+    try {
+      const hash = await writeContractAsync({
+        address: contractAddress as `0x${string}`,
+        abi: CipherLendingABI.abi,
+        functionName: 'submitLenderOffer',
+        args: [
+          borrowerRequestId,
+          amount,
+          apr,
+          term
+        ],
+      });
+      
+      return hash;
+    } catch (error) {
+      console.error("Error submitting lender offer:", error);
+      toast.error("Failed to submit lender offer");
+      return null;
+    }
+  }, [contractAddress, address, writeContractAsync]);
+
+  const acceptLoanOffer = useCallback(async (
+    offerId: bigint,
+    value?: bigint // Optional ETH value to send with the transaction
+  ): Promise<`0x${string}` | null> => {
+    if (!contractAddress || !address) {
+      toast.error("Contract not available or wallet not connected");
+      return null;
+    }
+
+    try {
+      const hash = await writeContractAsync({
+        address: contractAddress as `0x${string}`,
+        abi: CipherLendingABI.abi,
+        functionName: 'acceptLoanOffer',
+        args: [offerId],
+        value: value, // For payable functions, send ETH if needed
+      });
+      
+      return hash;
+    } catch (error) {
+      console.error("Error accepting loan offer:", error);
+      toast.error("Failed to accept loan offer");
+      return null;
+    }
+  }, [contractAddress, address, writeContractAsync]);
+
   return {
     contractAddress,
     isContractValid,
@@ -328,6 +386,8 @@ export const useCipherLending = () => {
     findEncryptedMatches,
     checkScoreMatch,
     getOffersForRequest,
+    submitLenderOffer,
+    acceptLoanOffer,
   };
 };
 

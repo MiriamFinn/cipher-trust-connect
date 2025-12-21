@@ -3,10 +3,11 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Lock, TrendingUp, Clock, RefreshCw } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useAccount, usePublicClient } from "wagmi";
+import { useAccount, usePublicClient, useWatchContractEvent } from "wagmi";
 import { toast } from "sonner";
 import { parseEther, formatEther } from "viem";
 import { useCipherLending } from "@/hooks/useCipherLending";
+import { useTransactionHistory } from "@/hooks/useTransactionHistory";
 import LoanDetailsDialog from "./LoanDetailsDialog";
 import { CipherLendingABI } from "@/abi/CipherLendingABI";
 
@@ -38,6 +39,7 @@ const BorrowPanel = () => {
     contractAddress,
     isContractValid
   } = useCipherLending();
+  const { addTransaction, updateTransaction } = useTransactionHistory();
 
   // Helper function to get current request count from contract
   const getBorrowerRequestsCount = useCallback(async (): Promise<bigint> => {
@@ -170,11 +172,23 @@ const BorrowPanel = () => {
     }
 
     setIsSubmitting(true);
+    const amountInWei = parseEther(loanAmount[0].toString());
+    let txId: string | undefined;
+
     try {
+      // Record transaction start
+      txId = addTransaction({
+        type: 'borrow_request',
+        status: 'pending',
+        details: {
+          amount: `$${loanAmount[0].toLocaleString()}`,
+          amountWei: amountInWei,
+          term: 12,
+          creditScore: encryptedScore,
+        },
+      });
+
       // Submit encrypted borrower request
-      // Convert amount to wei using viem's parseEther (handles precision correctly)
-      const amountInWei = parseEther(loanAmount[0].toString());
-      
       toast.info("Please confirm the transaction in your wallet...");
       
       const txHash = await submitEncryptedBorrowerRequest(
@@ -184,21 +198,72 @@ const BorrowPanel = () => {
       );
 
       if (!txHash) {
+        if (txId) {
+          updateTransaction(txId, {
+            status: 'failed',
+            error: 'Transaction was not submitted',
+          });
+        }
         toast.error("Transaction was not submitted. Please try again.");
         return;
+      }
+
+      // Update transaction with hash
+      if (txId) {
+        updateTransaction(txId, {
+          txHash: txHash as `0x${string}`,
+        });
       }
 
       // Wait for transaction to be mined
       if (publicClient) {
         toast.info("Transaction submitted! Waiting for confirmation...");
-        await publicClient.waitForTransactionReceipt({ hash: txHash });
+        const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+        // Get the request ID from the transaction (if available)
+        // For now, we'll update the transaction status
+        if (txId) {
+          updateTransaction(txId, {
+            status: 'success',
+            details: {
+              amount: `$${loanAmount[0].toLocaleString()}`,
+              amountWei: amountInWei,
+              term: 12,
+              creditScore: encryptedScore,
+              // requestId will be updated after fetching requests
+            },
+          });
+        }
 
         toast.success("Loan request submitted successfully!");
         
         // Refresh the list of user's requests (which will auto-select the new one)
         await fetchMyRequests();
+        
+        // Try to get the new request ID and update transaction
+        // Note: We need to get the updated requests after fetchMyRequests
+        // The state update is async, so we'll get the count and use the latest index
+        const totalRequests = await getBorrowerRequestsCount();
+        if (txId && totalRequests > 0n) {
+          const newRequestId = totalRequests - 1n; // Latest request is at index (count - 1)
+          updateTransaction(txId, {
+            details: {
+              amount: `$${loanAmount[0].toLocaleString()}`,
+              amountWei: amountInWei,
+              term: 12,
+              creditScore: encryptedScore,
+              requestId: newRequestId,
+            },
+          });
+        }
       } else {
         toast.success("Transaction submitted! Waiting for confirmation...");
+        if (txId) {
+          updateTransaction(txId, {
+            status: 'success',
+            txHash: txHash as `0x${string}`,
+          });
+        }
         // Fallback: refresh requests after a delay
         setTimeout(async () => {
           await fetchMyRequests();
@@ -206,6 +271,14 @@ const BorrowPanel = () => {
       }
     } catch (error: any) {
       console.error("Error submitting borrower request:", error);
+      
+      // Update transaction status to failed
+      if (txId) {
+        updateTransaction(txId, {
+          status: 'failed',
+          error: error?.message || "Unknown error",
+        });
+      }
       
       // Handle user rejection
       if (error?.message?.includes("User rejected") || error?.message?.includes("User denied")) {
@@ -239,6 +312,42 @@ const BorrowPanel = () => {
     }
   }, [selectedRequestId, fetchOffers]);
 
+  // Watch for new lender offers and auto-refresh
+  useWatchContractEvent({
+    address: contractAddress as `0x${string}` | undefined,
+    abi: CipherLendingABI.abi,
+    eventName: 'NewLenderOffer',
+    onLogs(logs) {
+      logs.forEach((log) => {
+        const requestId = log.args.requestId as bigint;
+        // If the new offer is for the currently selected request, refresh offers
+        if (selectedRequestId !== null && requestId === selectedRequestId) {
+          console.log('New offer detected for current request, refreshing...');
+          // Small delay to ensure contract state is updated
+          setTimeout(() => {
+            fetchOffers(selectedRequestId, true);
+          }, 1000);
+        }
+      });
+    },
+    enabled: isContractValid && selectedRequestId !== null,
+  });
+
+  // Poll for new offers periodically (every 10 seconds) as a backup
+  useEffect(() => {
+    if (!isContractValid || selectedRequestId === null) {
+      return;
+    }
+
+    const pollInterval = setInterval(() => {
+      if (selectedRequestId !== null) {
+        fetchOffers(selectedRequestId, false);
+      }
+    }, 10000); // Poll every 10 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [isContractValid, selectedRequestId, fetchOffers]);
+
   const handleViewDetails = (offer: LenderOffer) => {
     if (!isConnected) {
       toast.error("Please connect your wallet first");
@@ -264,6 +373,7 @@ const BorrowPanel = () => {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       })}`,
+      amountWei: offer.amount, // Include raw amount in wei for contract calls
       term: `${offer.term} months`,
       encrypted: true,
       offerId: offer.offerId,
