@@ -4,11 +4,11 @@ A privacy-first encrypted lending platform built with Fully Homomorphic Encrypti
 
 ## 🌐 Live Demo
 
-**Vercel Deployment**: [https://cipher-trust-connect.vercel.app/](https://cipher-trust-connect.vercel.app/)
+**Vercel Deployment**: [https://cipher-trust-connect.vercel.app/](https://cipher-trust-connect-pro.vercel.app/)
 
 ## 📹 Demo Video
 
-Watch the demo video to see the platform in action: [`cipher-trust-connect.mp4`](./cipher-trust-connect.mp4)
+Watch the demo video to see the platform in action: (https://youtu.be/hi9HSN64UYE)
 
 ## Overview
 
